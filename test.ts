@@ -272,3 +272,42 @@ basic.forever(() => {
 
 })
 */
+
+
+
+/*
+basic.showIcon(IconNames.Heart)
+
+UV.setPin(AnalogPin.P0)
+
+serial.redirectToUSB()
+
+basic.forever(function () {
+
+    serial.writeValue("adc", UV.getADCValue())
+
+    serial.writeValue("mV", UV.getVoltValue())
+
+    basic.pause(500)
+
+})
+*/
+
+
+/*
+basic.showIcon(IconNames.Heart)
+
+serial.redirectToUSB()
+
+Tilt.setPin(DigitalPin.P1)
+
+basic.forever(() => {
+
+    serial.writeValue("shaking", Tilt.getWhetherShaking())
+
+    basic.pause(100)
+
+})
+*/
+
+

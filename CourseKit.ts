@@ -858,3 +858,40 @@ namespace UV {
         return volt;
     }
 }
+
+
+
+
+
+/*
+Tilt Sensor block
+*/
+//% weight=10 color=#33FF99 icon="\uf033" block="Tilt"
+namespace Tilt{
+    let pin = DigitalPin.P0
+    let result = 0;
+
+
+    /**
+     * Set pin at which the Tilt Senor DOUT line is connected;
+     * @param pin_arg pin at which the Tilt Senor DOUT line is connected;
+     */
+    //% blockId=Tilt_setPin
+    //% block="set Tilt pin |%pin_arg|"
+    //% weight = 85
+    export function setPin(pin_arg: DigitalPin): void {
+        pin = pin_arg;
+    }
+
+
+    /**
+     * Return the output data;
+     */
+    //% blockId=UV_getWhetherShaking
+    //% block="get whether shaking"
+    //% weight = 75
+    export function getWhetherShaking(): number {
+        result = pins.digitalReadPin(pin);
+        return result;
+    }
+}
