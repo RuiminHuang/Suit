@@ -895,3 +895,31 @@ namespace Tilt{
         return result;
     }
 }
+
+
+
+/*
+Ultrasonic block
+*/
+//% weight=8 color=#FF0000 icon="\uf0fb" block="Ultrasonic"
+namespace Ultrasonic{
+
+    //% blockId=Ultrasonic_getDistance
+    //% block="get distance"
+    //% weight=80
+    export function getDistance(): number {
+
+        // send pulse
+        pins.setPull(DigitalPin.P0, PinPullMode.PullNone);
+        pins.digitalWritePin(DigitalPin.P0, 0);
+        control.waitMicros(2);
+        //the high level duration is 10 ms
+        pins.digitalWritePin(DigitalPin.P0, 1);
+        control.waitMicros(10);
+        pins.digitalWritePin(DigitalPin.P0, 0);
+        // read pulse
+        let d = pins.pulseIn(DigitalPin.P1, PulseValue.High, 11600);
+        return d / 58;
+    }
+}
+

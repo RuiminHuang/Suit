@@ -311,3 +311,134 @@ basic.forever(() => {
 */
 
 
+
+
+
+
+
+
+/*
+Tilt Sensor
+*/
+
+
+/*
+
+pins.setEvents(DigitalPin.P0, PinEventType.Edge)
+
+let item = 0
+
+serial.redirectToUSB()
+
+basic.forever(() => {
+
+    basic.showNumber(item)
+
+})
+
+control.onEvent(EventBusSource.MICROBIT_ID_IO_P0, EventBusValue.MICROBIT_PIN_EVT_FALL, () => {
+
+    item += 1
+
+    serial.writeValue("count", item)
+
+})
+
+input.onButtonPressed(Button.A, () => {
+
+    item = 0
+
+})
+*/
+
+
+
+
+
+
+
+
+
+
+/*
+Rotation Sensor
+*/
+
+
+/*
+
+let time = 0
+
+let item = 0
+
+let count = 0
+
+pins.onPulsed(DigitalPin.P1, PulseValue.Low, function () {
+
+    if (input.runningTime() - time > 50) {
+    
+        time = input.runningTime()
+
+        count = count + 1
+
+    }
+
+    time = input.runningTime()
+
+    serial.writeValue("press", 0)
+
+})
+
+pins.onPulsed(DigitalPin.P0, PulseValue.Low, function () {
+
+    if (input.runningTime() - time > 50) {
+    
+        time = input.runningTime()
+
+        count = count - 1
+
+    }
+
+    time = input.runningTime()
+
+    serial.writeValue("press", 0)
+
+})
+
+pins.onPulsed(DigitalPin.P2, PulseValue.Low, function () {
+
+    count = 0
+
+    serial.writeValue("press", 1)
+
+})
+
+count = 0
+
+item = 0
+
+time = input.runningTime()
+
+pins.setPull(DigitalPin.P0, PinPullMode.PullUp)
+
+pins.setPull(DigitalPin.P1, PinPullMode.PullUp)
+
+pins.setPull(DigitalPin.P2, PinPullMode.PullUp)
+
+serial.redirectToUSB()
+
+basic.forever(function () {
+
+    while (item != count) {
+    
+        item = count
+
+        serial.writeValue("item", item)
+
+    }
+
+    basic.pause(500)
+
+})
+
+*/
