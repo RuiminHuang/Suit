@@ -923,3 +923,346 @@ namespace Ultrasonic{
     }
 }
 
+
+
+/*
+TSL2581 sensor
+*/
+//% weight=8 color=#C0C0C0 icon="\uf069" block="TSL2581"
+namespace TSL2581{
+
+    //must write as 1 when addressing COMMAND register
+    const TSL2581_COMMAND_CMD = 0x80
+    //I2C read/write block protocol
+    const TSL2581_TRANSACTION = 0x40
+    //Specifies a special command
+    const TSL2581_TRANSACTION_SPECIAL = 0X60
+    
+    //REGISTER ADDRESS
+    const TSL2581_CONTROL = 0x00
+    const TSL2581_TIMING = 0x01
+    const TSL2581_INTERRUPT = 0x02
+    const TSL2581_THLLOW = 0x03
+    const TSL2581_THLHIGH = 0x04
+    const TSL2581_THHLOW = 0x05
+    const TSL2581_THHHIGH = 0x06
+    const TSL2581_ANALOG = 0x07
+
+    const TSL2581_ID = 0x12
+    const TSL2581_DATA0LOW = 0x14
+    const TSL2581_DATA0HIGH = 0x15
+    const TSL2581_DATA1LOW = 0x16
+    const TSL2581_DATA1HIGH = 0x17
+
+    //---------------------------------------------------
+
+    const TSL2581_ADC_EN = 0X02
+    const TSL2581_CONTROL_POWERON = 0x01
+    const TSL2581_CONTROL_POWEROFF = 0x00
+    const TSL2581_INTR_TEST_MODE = 0X30
+    const TSL2581_INTR_INTER_MODE = 0X1F
+
+    //TRANSACTION_SPECIAL for specifies a special command function
+    const TSL2581_SPECIAL_FUN_RESER1 = 0X00
+    const TSL2581_SPECIAL_FUN_INTCLEAR = 0X01
+    const TSL2581_SPECIAL_FUN_STOPMAN = 0X02
+    const TSL2581_SPECIAL_FUN_STARTMAN = 0X03
+    const TSL2581_SPECIAL_FUN_RESER2 = 0X0F
+
+    //INTERRUPT
+    const TSL2581_INTEGRATIONTIME_Manual = 0x00
+    const TSL2581_INTEGRATIONTIME_2Z7MS = 0xFF
+    const TSL2581_INTEGRATIONTIME_5Z4MS = 0xFE
+    const TSL2581_INTEGRATIONTIME_51Z3MS = 0xED
+    const TSL2581_INTEGRATIONTIME_100MS = 0xDB
+    const TSL2581_INTEGRATIONTIME_200MS = 0xB6
+    const TSL2581_INTEGRATIONTIME_400MS = 0x6C
+    const TSL2581_INTEGRATIONTIME_688MS = 0x01
+
+    //ANALOG
+    const TSL2581_GAIN_1X = 0x00
+    const TSL2581_GAIN_8X = 0x01
+    const TSL2581_GAIN_16X = 0x02
+    const TSL2581_GAIN_111X = 0x03
+
+
+    const TSL2581_LUX_SCALE = 16 // scale by 2^16
+    const TSL2581_RATIO_SCALE = 9 // scale ratio by 2^9
+    //---------------------------------------------------
+    // Integration time scaling factors
+    //---------------------------------------------------
+    const TSL2581_CH_SCALE = 16 // scale channel values by 2^16
+
+    // Nominal 400 ms integration. 
+    // Specifies the integration time in 2.7-ms intervals
+    // 400/2.7 = 148
+    const TSL2581_NOM_INTEG_CYCLE = 148
+    //---------------------------------------------------
+    // Gain scaling factors
+    //---------------------------------------------------
+    const TSL2581_CH0GAIN128X = 107 // 128X gain scalar for Ch0
+    const TSL2581_CH1GAIN128X = 115 // 128X gain scalar for Ch1
+
+    //---------------------------------------------------
+    const TSL2581_K1C = 0x009A // 0.30 * 2^RATIO_SCALE
+    const TSL2581_B1C = 0x2148 // 0.130 * 2^LUX_SCALE
+    const TSL2581_M1C = 0x3d71 // 0.240 * 2^LUX_SCALE
+
+    const TSL2581_K2C = 0x00c3 // 0.38 * 2^RATIO_SCALE
+    const TSL2581_B2C = 0x2a37 // 0.1649 * 2^LUX_SCALE
+    const TSL2581_M2C = 0x5b30 // 0.3562 * 2^LUX_SCALE
+
+    const TSL2581_K3C = 0x00e6 // 0.45 * 2^RATIO_SCALE
+    const TSL2581_B3C = 0x18ef // 0.0974 * 2^LUX_SCALE
+    const TSL2581_M3C = 0x2db9 // 0.1786 * 2^LUX_SCALE
+
+    const TSL2581_K4C = 0x0114 // 0.54 * 2^RATIO_SCALE
+    const TSL2581_B4C = 0x0fdf // 0.062 * 2^LUX_SCALE
+    const TSL2581_M4C = 0x199a // 0.10 * 2^LUX_SCALE
+
+    const TSL2581_K5C = 0x0114 // 0.54 * 2^RATIO_SCALE
+    const TSL2581_B5C = 0x0000 // 0.00000 * 2^LUX_SCALE
+    const TSL2581_M5C = 0x0000 // 0.00000 * 2^LUX_SCALE
+    //---------------------------------------------------
+
+
+    export enum REGISTER {
+        CONTROL = 0x00,
+        TIMING = 0x01,
+        INTERRUPT = 0x02,
+        THLLOW = 0x03,
+        THLHIGH = 0x04,
+        THHLOW = 0x05,
+        THHHIGH = 0x06,
+        ANALOG = 0x07,
+    
+        ID = 0x12,
+        DATA0LOW = 0x14,
+        DATA0HIGH = 0x15,
+        DATA1LOW = 0x16,
+        DATA1HIGH = 0x17
+    }
+
+    export enum TSL2581_I2C_ADDRESS {
+        ADDR_0x29 = 0x29,
+        //default
+        ADDR_0x39 = 0x39,
+        ADDR_0x49 = 0x49
+    }
+
+    let initialized = false;
+    let TSL2581_ADDRESS = TSL2581_I2C_ADDRESS.ADDR_0x39;
+    let ch0 = 0;
+    let ch1 = 0;
+
+
+    function i2cWrite(addr: number, reg: number, value: number): void {
+        let buf = pins.createBuffer(2);
+        buf[0] = reg;
+        buf[1] = value;
+        pins.i2cWriteBuffer(addr, buf);
+    }
+
+    function i2cRead(addr: number, reg: number): number {
+        pins.i2cWriteNumber(addr, reg, NumberFormat.UInt8BE);
+        let val = pins.i2cReadNumber(addr, NumberFormat.UInt8BE);
+        return val;
+    }
+
+    function configuePowerOn(): void {
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_CONTROL,TSL2581_CONTROL_POWERON);
+    }
+
+    function configueSetting(): void {
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_TIMING, TSL2581_INTEGRATIONTIME_400MS);
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_CONTROL, TSL2581_ADC_EN|TSL2581_CONTROL_POWERON);
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_INTERRUPT, TSL2581_INTR_INTER_MODE);
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_ANALOG, TSL2581_GAIN_16X);
+    }
+
+    function reloadRegister(): void{
+        i2cWrite(TSL2581_ADDRESS,TSL2581_COMMAND_CMD|TSL2581_TRANSACTION_SPECIAL|TSL2581_SPECIAL_FUN_INTCLEAR,TSL2581_SPECIAL_FUN_INTCLEAR);
+        i2cWrite(TSL2581_ADDRESS,TSL2581_COMMAND_CMD|TSL2581_CONTROL,TSL2581_ADC_EN|TSL2581_CONTROL_POWERON);
+    }
+
+    function setInterruptThreshold(low: number, high: number) {
+        let dataLow = low & 0xff;
+        let dataHigh = (low >> 8) & 0xff;
+
+        i2cWrite(TSL2581_ADDRESS,TSL2581_COMMAND_CMD|TSL2581_THLLOW,dataLow);
+        i2cWrite(TSL2581_ADDRESS,TSL2581_COMMAND_CMD|TSL2581_THLHIGH,dataHigh);
+        
+        dataLow = high & 0xff;
+        dataHigh = (high >> 8) & 0xff;
+            
+        i2cWrite(TSL2581_ADDRESS,TSL2581_COMMAND_CMD|TSL2581_THHLOW,dataLow);
+        i2cWrite(TSL2581_ADDRESS, TSL2581_COMMAND_CMD | TSL2581_THHHIGH, dataHigh);
+    }
+
+    function readChannel(): void{
+
+        basic.pause(450);
+
+        let rsltLow = i2cRead(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_TRANSACTION|TSL2581_DATA0LOW);
+        let rsltHigh = i2cRead(TSL2581_ADDRESS, TSL2581_COMMAND_CMD | TSL2581_TRANSACTION | TSL2581_DATA0HIGH);
+        ch0 = ((rsltHigh << 8) | rsltLow) & 0xffff;
+        
+        rsltLow = i2cRead(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_TRANSACTION|TSL2581_DATA1LOW);
+        rsltHigh = i2cRead(TSL2581_ADDRESS, TSL2581_COMMAND_CMD | TSL2581_TRANSACTION | TSL2581_DATA1HIGH);
+        ch1 = ((rsltHigh << 8) | rsltLow) & 0xffff;
+    }
+
+
+    function calculateLux(iGain: number, tIntCycles: number): number{
+        let chScale0 = 0;
+        let chScale1 = 0;
+        let channel1 = 0;
+        let channel0 = 0;
+        let temp = 0;
+        let ratio1 = 0;
+        let ratio = 0;
+        let lux_temp = 0;
+        let b = 0;
+        let m = 0;
+        if (tIntCycles == TSL2581_NOM_INTEG_CYCLE) {
+            chScale0 = 65536;
+        } else {
+            chScale0 = (TSL2581_NOM_INTEG_CYCLE << TSL2581_CH_SCALE) / tIntCycles;
+        }
+        switch(iGain) {
+            case 0: {
+                chScale1 = chScale0;
+                break;
+            }
+            case 1: {
+                chScale0 = chScale0 >> 3;
+                chScale1 = chScale0;
+                break;
+            }
+            case 2: {
+                chScale0 = chScale0 >> 4;
+                chScale1 = chScale0;
+                break;
+            }
+            case 3: {
+                chScale1 = chScale0 / TSL2581_CH1GAIN128X;
+                chScale0 = chScale0 / TSL2581_CH0GAIN128X;
+                break;
+            }
+        }
+        channel0 = (ch0 * chScale0) >>  TSL2581_CH_SCALE;
+        channel1 = (ch1 * chScale1) >>  TSL2581_CH_SCALE;
+
+
+        // find the ratio of the channel values (Channel1/Channel0)
+        if (channel0 != 0)
+            ratio1 = (channel1 << (TSL2581_RATIO_SCALE + 1)) / channel0;
+
+        ratio = (ratio1 + 1) >> 1;	  									 // round the ratio value
+
+        if ((ratio >= 0) && (ratio <= TSL2581_K1C))
+        {
+            b = TSL2581_B1C;
+            m = TSL2581_M1C;
+        }
+        else if (ratio <= TSL2581_K2C)
+        {
+            b = TSL2581_B2C;
+            m = TSL2581_M2C;
+        }
+        else if (ratio <= TSL2581_K3C)
+        {
+            b = TSL2581_B3C;
+            m = TSL2581_M3C;
+        }
+        else if (ratio <= TSL2581_K4C)//276
+        {
+            b = TSL2581_B4C;
+            m = TSL2581_M4C;
+        }
+        else if (ratio > TSL2581_K5C)//276
+        {
+            b = TSL2581_B5C;
+            m = TSL2581_M5C;
+        }
+        temp = ((channel0 * b) - (channel1 * m));
+        //  temp += (1 << (LUX_SCALE - 1));
+        temp = temp + 32768;               // round lsb (2^(LUX_SCALE-1))
+        lux_temp = temp >> TSL2581_LUX_SCALE;			// strip off fractional portion
+        return (lux_temp);		  							// Signal I2C had no errors
+    }
+
+
+    /**
+     * set I2C address
+     * @param d_addr [29-49] choose device address; eg: TSL2581.TSL2581_I2C_ADDRESS.ADDR_0x39
+     */
+    //% blockId="TSL2581_setAddress" 
+    //% block="set TSL2581 device address %d_addr"
+    //% weight=60 
+    //% blockGap=8
+    export function setAddress(d_addr: TSL2581_I2C_ADDRESS) {
+        TSL2581_ADDRESS = d_addr;
+    }
+
+    /**
+     * get register value,default value,default is 147
+     * @param r_addr [00-17] choose register address; eg: TSL2581.REGISTER.ID
+     */
+    //% blockId="TSL2581_readDeviceRegister" 
+    //% block="get the register %r_addr value"
+    //% weight=50
+    export function readDeviceRegister(r_addr: REGISTER) {
+        let result = i2cRead(TSL2581_ADDRESS, TSL2581_COMMAND_CMD|TSL2581_TRANSACTION|r_addr);
+        return result;
+    }
+
+
+    /**
+     * Init the light sensor
+     */
+    //% blockId="TSL2581_initSensor" 
+    //% block="init the sensor"
+    //% weight=40
+    export function initSensor(): void{
+        configuePowerOn();
+        basic.pause(2000);
+        configueSetting();
+        let dev_ID = readDeviceRegister(TSL2581.REGISTER.ID);
+        if (dev_ID == 147) {
+            initialized = true;
+            //for debug
+            //basic.showIcon(IconNames.Yes)
+        } else {
+            initialized = false;
+            //for debug
+            //basic.showIcon(IconNames.No);
+        }
+    }
+
+
+    /**
+     * get lux value
+     * @param 
+     */
+    //% blockId="TSL2581_getLux" 
+    //% block="get the lux value"
+    //% weight=30
+    export function getLux(): number{
+        readChannel();
+        let lux = calculateLux(2, TSL2581_NOM_INTEG_CYCLE);
+        setInterruptThreshold(2000, 50000);
+        let interrupt = pins.digitalReadPin(DigitalPin.P0); 
+        if (interrupt == 1) {
+            //for debug
+            //serial.writeValue("interruptPin", 1);
+            return lux;
+        } else {
+            //for debug
+            //serial.writeValue("interruptPin", 0);
+            reloadRegister();
+            return lux;
+        }
+    }
+}
+

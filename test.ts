@@ -442,3 +442,29 @@ basic.forever(function () {
 })
 
 */
+
+
+
+
+
+
+/*
+TSL2581
+*/
+
+
+/*
+TSL2581.setAddress(TSL2581.TSL2581_I2C_ADDRESS.ADDR_0x39)
+
+TSL2581.initSensor()
+
+serial.redirectToUSB()
+
+basic.forever(function () {
+
+    serial.writeValue("lux", TSL2581.getLux())
+
+    basic.pause(100)
+
+})
+*/
